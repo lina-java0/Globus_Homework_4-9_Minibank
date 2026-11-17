@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+            http://www.liquibase.org/xml/ns/dbchangelog
+            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="008-generate-test-data" author="lina"
+               dbms="postgresql">
+
+        <sql>
+            INSERT INTO clients (name, email)
+            SELECT
+            'Client ' || i,
+            'client' || i || '@example.com'
+            FROM generate_series(1, 100) AS i;
+        </sql>
+
+        <sql>
+            INSERT INTO accounts (client_id, account_number, balance)
+            SELECT
+            id,
+            'ACC-' || id,
+            1000.00
+            FROM clients;
+        </sql>
+
+        <sql>
+            INSERT INTO transactions
+            (account_id, amount, type, transaction_date)
+            SELECT
+                (i % 100) + 1,
+                (random() * 1000)::NUMERIC(19,4),
+                CASE
+                    WHEN i % 2 = 0 THEN 'TRANSFER_IN'
+                    ELSE 'TRANSFER_OUT'
+                END,
+                TIMESTAMP '2026-01-01 00:00:00'
+                + random() * INTERVAL '300 days'
+            FROM generate_series(1, 50000) AS i;
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>
