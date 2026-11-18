@@ -1,4 +1,4 @@
-package com.minibank.httpHandler.transfer;
+package com.minibank.dto.transfer;
 
 public record TransferResponse(
         String message

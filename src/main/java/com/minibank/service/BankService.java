@@ -1,6 +1,8 @@
-package com.minibank;
+package com.minibank.service;
 
 import com.minibank.exception.custom_exceptions.*;
+import com.minibank.model.Account;
+import com.minibank.model.Client;
 
 import java.math.BigDecimal;
 import java.sql.*;

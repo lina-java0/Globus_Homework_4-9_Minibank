@@ -1,7 +1,7 @@
 package com.minibank.exception;
 
 import com.minibank.dto.error.HttpErrorResponse;
-import com.minibank.strategy.*;
+import com.minibank.exception.strategies.*;
 
 import java.util.List;
 

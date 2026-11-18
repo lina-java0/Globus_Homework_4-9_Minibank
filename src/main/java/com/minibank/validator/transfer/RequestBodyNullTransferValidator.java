@@ -7,10 +7,16 @@ public class RequestBodyNullTransferValidator implements TransferValidator {
 
     @Override
     public void validateRequest(TransferRequest request) {
-        if (request.fromAccountId() == null
-                || request.toAccountId() == null
-                || request.amount() == null) {
-            throw new InvalidRequestException("All fields are required");
+        if (request.fromAccountId() == null) {
+            throw new InvalidRequestException("fromAccountId is required");
+        }
+
+        if (request.toAccountId() == null) {
+            throw new InvalidRequestException("toAccountId is required");
+        }
+
+        if (request.amount() == null) {
+            throw new InvalidRequestException("amount is required");
         }
     }
 }

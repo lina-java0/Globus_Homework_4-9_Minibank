@@ -1,4 +1,4 @@
-package com.minibank.strategy;
+package com.minibank.exception.strategies;
 
 import com.minibank.dto.error.HttpErrorResponse;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
@@ -6,15 +6,15 @@ import com.minibank.exception.custom_exceptions.InvalidRequestException;
 public class InvalidRequestStrategy implements ExceptionHandlerStrategy {
 
     @Override
-    public boolean supports(Exception exception) {
-        return exception instanceof InvalidRequestException;
+    public boolean supports(Exception ex) {
+        return ex instanceof InvalidRequestException;
     }
 
     @Override
-    public HttpErrorResponse handle(Exception exception) {
+    public HttpErrorResponse handle(Exception ex) {
         return new HttpErrorResponse(
                 400,
-                exception.getMessage()
+                ex.getMessage()
         );
     }
 }

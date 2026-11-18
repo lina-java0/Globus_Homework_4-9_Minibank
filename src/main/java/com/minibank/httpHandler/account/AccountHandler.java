@@ -1,23 +1,17 @@
 package com.minibank.httpHandler.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minibank.Account;
-import com.minibank.BankService;
 import com.minibank.dto.account.OpenAccountRequest;
 import com.minibank.dto.error.HttpErrorResponse;
 import com.minibank.exception.HttpExceptionMapper;
-import com.minibank.exception.custom_exceptions.InvalidRequestException;
-import com.minibank.exception.custom_exceptions.MethodNotAllowedException;
-import com.minibank.validator.account.AccountValidator;
-import com.minibank.validator.account.RequestBodyNullAccountValidator;
-import com.minibank.validator.account.RequestNullAccountValidator;
+import com.minibank.httpHandler.utils.HttpUtils;
+import com.minibank.model.Account;
+import com.minibank.service.BankService;
+import com.minibank.validator.account.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class AccountHandler implements HttpHandler {
@@ -38,80 +32,45 @@ public class AccountHandler implements HttpHandler {
 
         this.accountValidators = List.of(
                 new RequestNullAccountValidator(),
-                new RequestBodyNullAccountValidator()
+                new RequestBodyNullAccountValidator(),
+                new PositiveClientIdAccountValidator(),
+                new AccountNumberBlankAccountValidator()
         );
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            validateHttpMethod(exchange);
-
-            // Читаем JSON из тела запроса
-            OpenAccountRequest request = readRequest(exchange);
-
-            // Валидация
+            HttpUtils.validateHttpMethod(exchange);
+            // Формирование запроса
+            OpenAccountRequest request = HttpUtils.readRequest(
+                    exchange,
+                    objectMapper,
+                    OpenAccountRequest.class
+            );
+            // Валидация запроса
             for (AccountValidator validator : accountValidators) {
                 validator.validateRequest(request);
             }
-
-            // Вызываем сервис
+            // Вызов сервиса
             Account account = bankService.openAccount(
                     request.clientId(),
                     request.accountNumber()
             );
-
-            sendResponse(
+            HttpUtils.sendResponse(
                     exchange,
                     201,
-                    objectMapper.writeValueAsString(account)
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(account)
             );
 
         } catch (RuntimeException ex) {
             HttpErrorResponse error = exceptionMapper.map(ex);
 
-            sendResponse(
+            HttpUtils.sendResponse(
                     exchange,
                     error.statusCode(),
-                    objectMapper.writeValueAsString(error)
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(error)
             );
-        }
-    }
-
-    private void validateHttpMethod(HttpExchange exchange) {
-        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-            exchange.getResponseHeaders().set("Allow", "POST");
-            throw new MethodNotAllowedException("Method not allowed");
-        }
-    }
-
-    private OpenAccountRequest readRequest(HttpExchange exchange) {
-        try (InputStream requestBody = exchange.getRequestBody()) {
-            return objectMapper.readValue(
-                    requestBody,
-                    OpenAccountRequest.class
-            );
-        } catch (IOException ex) {
-            throw new InvalidRequestException("Invalid request");
-        }
-    }
-
-    private void sendResponse(
-            HttpExchange exchange,
-            int statusCode,
-            String message) throws IOException {
-
-        byte[] response = message.getBytes(StandardCharsets.UTF_8);
-
-        exchange.getResponseHeaders().set(
-                "Content-Type",
-                "application/json; charset=UTF-8"
-        );
-
-        exchange.sendResponseHeaders(statusCode, response.length);
-
-        try (OutputStream output = exchange.getResponseBody()) {
-            output.write(response);
         }
     }
 }

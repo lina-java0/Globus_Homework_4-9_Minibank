@@ -1,4 +1,4 @@
-package com.minibank.strategy;
+package com.minibank.exception.strategies;
 
 import com.minibank.dto.error.HttpErrorResponse;
 import com.minibank.exception.custom_exceptions.MethodNotAllowedException;

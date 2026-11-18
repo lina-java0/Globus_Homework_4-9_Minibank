@@ -1,4 +1,4 @@
-package com.minibank;
+package com.minibank.model;
 
 import java.math.BigDecimal;
 
@@ -20,5 +20,5 @@ public class Account {
     public Long getClientId() { return clientId; }
     public String getAccountNumber() { return accountNumber; }
     public BigDecimal getBalance() { return balance; }
-    public void setBalance(BigDecimal balance) { this.balance = balance; }
+//    public void setBalance(BigDecimal balance) { this.balance = balance; }
 }

@@ -7,9 +7,12 @@ public class RequestBodyNullClientValidator implements ClientValidator {
 
     @Override
     public void validateRequest(RegisterClientRequest request) {
-        if (request.name() == null || request.name().isBlank()
-                || request.email() == null || request.email().isBlank()) {
-            throw new InvalidRequestException("All fields are required");
+        if (request.name() == null) {
+            throw new InvalidRequestException("name is required");
+        }
+
+        if (request.email() == null) {
+            throw new InvalidRequestException("email is required");
         }
     }
 }

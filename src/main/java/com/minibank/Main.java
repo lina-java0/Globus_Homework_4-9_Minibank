@@ -5,6 +5,7 @@ import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.httpHandler.account.AccountHandler;
 import com.minibank.httpHandler.client.ClientHandler;
 import com.minibank.httpHandler.transfer.TransferHandler;
+import com.minibank.service.BankService;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
