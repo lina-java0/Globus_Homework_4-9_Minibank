@@ -1,5 +1,9 @@
 package com.minibank;
 
+import com.minibank.exception.custom_exceptions.AccountNotFoundException;
+import com.minibank.exception.custom_exceptions.ClientNotFoundException;
+import com.minibank.exception.custom_exceptions.InsufficientFundsException;
+
 import java.math.BigDecimal;
 import java.sql.*;
 
@@ -123,7 +127,7 @@ public class BankService {
                             resultSet.getBigDecimal("balance")
                     );
                 }
-                throw new IllegalArgumentException("Account not found: " + accountId);
+                throw new AccountNotFoundException("Account not found: " + accountId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to retrieve account", e);
@@ -150,7 +154,7 @@ public class BankService {
                             resultSet.getString("email")
                     );
                 }
-                throw new IllegalArgumentException("Client not found: " + clientId);
+                throw new ClientNotFoundException("Client not found: " + clientId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to retrieve client", e);
@@ -175,7 +179,7 @@ public class BankService {
         // получателя — если toAccountId не существует, деньги уже
         // списаны и потеряны
         if (from.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient funds on account " + fromAccountId);
+            throw new InsufficientFundsException("Insufficient funds on account " + fromAccountId);
         }
 
         // Списываем деньги до проверки существования счёта получателя
@@ -232,7 +236,7 @@ public class BankService {
             int updatedRows = statement.executeUpdate();
 
             if (updatedRows == 0) {
-                throw new IllegalArgumentException("Account not found: " + accountId);
+                throw new AccountNotFoundException("Account not found: " + accountId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to update account balance", e);
