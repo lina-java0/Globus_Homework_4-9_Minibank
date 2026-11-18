@@ -1,8 +1,6 @@
 package com.minibank;
 
-import com.minibank.exception.custom_exceptions.AccountNotFoundException;
-import com.minibank.exception.custom_exceptions.ClientNotFoundException;
-import com.minibank.exception.custom_exceptions.InsufficientFundsException;
+import com.minibank.exception.custom_exceptions.*;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -68,6 +66,11 @@ public class BankService {
                 throw new SQLException("Failed to retrieve client ID");
             }
         } catch (SQLException e) {
+
+            if ("23505".equals(e.getSQLState())) {
+                throw new EmailAlreadyExistsException("Client with this email already exists: " + email);
+            }
+
             throw new IllegalStateException("Failed to register client", e);
         }
     }
@@ -102,6 +105,11 @@ public class BankService {
                 throw new SQLException("Failed to retrieve account ID");
             }
         } catch (SQLException e) {
+
+            if ("23505".equals(e.getSQLState())) {
+                throw new AccountAlreadyExistsException("Account number already exists: " + accountNumber);
+            }
+
             throw new IllegalStateException("Failed to open account", e);
         }
     }

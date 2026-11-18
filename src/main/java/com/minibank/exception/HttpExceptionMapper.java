@@ -15,6 +15,8 @@ public class HttpExceptionMapper {
                 new InsufficientFundsStrategy(),
                 new InvalidRequestStrategy(),
                 new MethodNotAllowedStrategy(),
+                new EmailAlreadyExistsStrategy(),
+                new AccountAlreadyExistsStrategy(),
                 new DefaultExceptionStrategy());
     }
 

@@ -1,13 +1,16 @@
-package com.minibank.httpHandler;
+package com.minibank.httpHandler.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minibank.Account;
 import com.minibank.BankService;
+import com.minibank.dto.account.OpenAccountRequest;
 import com.minibank.dto.error.HttpErrorResponse;
-import com.minibank.dto.transfer.TransferRequest;
 import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
 import com.minibank.exception.custom_exceptions.MethodNotAllowedException;
-import com.minibank.validator.TransferValidator;
+import com.minibank.validator.account.AccountValidator;
+import com.minibank.validator.account.RequestBodyNullAccountValidator;
+import com.minibank.validator.account.RequestNullAccountValidator;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -15,19 +18,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-public class TransferHandler implements HttpHandler {
+public class AccountHandler implements HttpHandler {
 
     private final BankService bankService;
     private final ObjectMapper objectMapper;
     private final HttpExceptionMapper exceptionMapper;
-    private final TransferValidator transferValidator;
+    private final List<AccountValidator> accountValidators;
 
-    public TransferHandler(BankService bankService) {
+    public AccountHandler(
+            BankService bankService,
+            ObjectMapper objectMapper,
+            HttpExceptionMapper exceptionMapper
+    ) {
         this.bankService = bankService;
-        this.objectMapper = new ObjectMapper();
-        this.exceptionMapper = new HttpExceptionMapper();
-        this.transferValidator = new TransferValidator();
+        this.objectMapper = objectMapper;
+        this.exceptionMapper = exceptionMapper;
+
+        this.accountValidators = List.of(
+                new RequestNullAccountValidator(),
+                new RequestBodyNullAccountValidator()
+        );
     }
 
     @Override
@@ -36,23 +48,33 @@ public class TransferHandler implements HttpHandler {
             validateHttpMethod(exchange);
 
             // Читаем JSON из тела запроса
-            TransferRequest request = readRequest(exchange);
+            OpenAccountRequest request = readRequest(exchange);
 
             // Валидация
-            transferValidator.validateRequest(request);
+            for (AccountValidator validator : accountValidators) {
+                validator.validateRequest(request);
+            }
 
-            //Вызываем сервис
-            bankService.transfer(
-                    request.fromAccountId(),
-                    request.toAccountId(),
-                    request.amount()
+            // Вызываем сервис
+            Account account = bankService.openAccount(
+                    request.clientId(),
+                    request.accountNumber()
             );
 
-            sendResponse(exchange, 200, "Transfer successful");
+            sendResponse(
+                    exchange,
+                    201,
+                    objectMapper.writeValueAsString(account)
+            );
 
         } catch (RuntimeException ex) {
             HttpErrorResponse error = exceptionMapper.map(ex);
-            sendResponse(exchange, error.statusCode(), error.message());
+
+            sendResponse(
+                    exchange,
+                    error.statusCode(),
+                    objectMapper.writeValueAsString(error)
+            );
         }
     }
 
@@ -63,11 +85,11 @@ public class TransferHandler implements HttpHandler {
         }
     }
 
-    private TransferRequest readRequest(HttpExchange exchange) throws IOException {
+    private OpenAccountRequest readRequest(HttpExchange exchange) {
         try (InputStream requestBody = exchange.getRequestBody()) {
             return objectMapper.readValue(
                     requestBody,
-                    TransferRequest.class
+                    OpenAccountRequest.class
             );
         } catch (IOException ex) {
             throw new InvalidRequestException("Invalid request");
@@ -81,7 +103,11 @@ public class TransferHandler implements HttpHandler {
 
         byte[] response = message.getBytes(StandardCharsets.UTF_8);
 
-        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+        exchange.getResponseHeaders().set(
+                "Content-Type",
+                "application/json; charset=UTF-8"
+        );
+
         exchange.sendResponseHeaders(statusCode, response.length);
 
         try (OutputStream output = exchange.getResponseBody()) {

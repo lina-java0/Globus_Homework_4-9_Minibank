@@ -1,6 +1,10 @@
 package com.minibank;
 
-import com.minibank.httpHandler.TransferHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minibank.exception.HttpExceptionMapper;
+import com.minibank.httpHandler.account.AccountHandler;
+import com.minibank.httpHandler.client.ClientHandler;
+import com.minibank.httpHandler.transfer.TransferHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -10,10 +14,33 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        BankService bank = new BankService();
+        BankService bankService = new BankService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        HttpExceptionMapper exceptionMapper = new HttpExceptionMapper();
+
+        ClientHandler clientHandler = new ClientHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
+
+        TransferHandler transferHandler = new TransferHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
+
+        AccountHandler accountHandler = new AccountHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        server.createContext("/transfer", new TransferHandler(bank));
+
+        server.createContext("/transfer", transferHandler);
+        server.createContext("/clients", clientHandler);
+        server.createContext("/accounts", accountHandler);
 
         server.start();
 
