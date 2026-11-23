@@ -1,4 +1,4 @@
-package com.minibank;
+package com.minibank.model;
 
 public class Client {
 

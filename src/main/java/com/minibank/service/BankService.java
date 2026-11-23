@@ -1,4 +1,8 @@
-package com.minibank;
+package com.minibank.service;
+
+import com.minibank.exception.custom_exceptions.*;
+import com.minibank.model.Account;
+import com.minibank.model.Client;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -64,6 +68,11 @@ public class BankService {
                 throw new SQLException("Failed to retrieve client ID");
             }
         } catch (SQLException e) {
+
+            if ("23505".equals(e.getSQLState())) {
+                throw new EmailAlreadyExistsException("Client with this email already exists: " + email);
+            }
+
             throw new IllegalStateException("Failed to register client", e);
         }
     }
@@ -98,6 +107,11 @@ public class BankService {
                 throw new SQLException("Failed to retrieve account ID");
             }
         } catch (SQLException e) {
+
+            if ("23505".equals(e.getSQLState())) {
+                throw new AccountAlreadyExistsException("Account number already exists: " + accountNumber);
+            }
+
             throw new IllegalStateException("Failed to open account", e);
         }
     }
@@ -123,7 +137,7 @@ public class BankService {
                             resultSet.getBigDecimal("balance")
                     );
                 }
-                throw new IllegalArgumentException("Account not found: " + accountId);
+                throw new AccountNotFoundException("Account not found: " + accountId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to retrieve account", e);
@@ -150,7 +164,7 @@ public class BankService {
                             resultSet.getString("email")
                     );
                 }
-                throw new IllegalArgumentException("Client not found: " + clientId);
+                throw new ClientNotFoundException("Client not found: " + clientId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to retrieve client", e);
@@ -175,7 +189,7 @@ public class BankService {
         // получателя — если toAccountId не существует, деньги уже
         // списаны и потеряны
         if (from.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient funds on account " + fromAccountId);
+            throw new InsufficientFundsException("Insufficient funds on account " + fromAccountId);
         }
 
         // Списываем деньги до проверки существования счёта получателя
@@ -232,7 +246,7 @@ public class BankService {
             int updatedRows = statement.executeUpdate();
 
             if (updatedRows == 0) {
-                throw new IllegalArgumentException("Account not found: " + accountId);
+                throw new AccountNotFoundException("Account not found: " + accountId);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to update account balance", e);

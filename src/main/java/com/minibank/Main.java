@@ -1,40 +1,80 @@
 package com.minibank;
 
-import java.math.BigDecimal;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minibank.exception.HttpExceptionMapper;
+import com.minibank.httpHandler.account.GetAccountHandler;
+import com.minibank.httpHandler.account.PostAccountHandler;
+import com.minibank.httpHandler.account.router.AccountRouter;
+import com.minibank.httpHandler.client.GetClientHandler;
+import com.minibank.httpHandler.client.PostClientHandler;
+import com.minibank.httpHandler.client.router.ClientRouter;
+import com.minibank.httpHandler.transfer.TransferHandler;
+import com.minibank.service.BankService;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 public class Main {
 
-    public static void main(String[] args) {
-        BankService bank = new BankService();
+    public static void main(String[] args) throws IOException {
 
-        Client client = bank.registerClient("Ivan Petrov", "ivan@example.com");
-        Account account1 = bank.openAccount(client.getId(), "ACC-101");
-        Account account2 = bank.openAccount(client.getId(), "ACC-102");
+        BankService bankService = new BankService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        HttpExceptionMapper exceptionMapper = new HttpExceptionMapper();
 
-        // Пополняем первый счёт перед демонстрацией переводов
-        bank.deposit(account1.getId(), new BigDecimal("1000.00"));
+        GetClientHandler getClientHandler = new GetClientHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
-        System.out.println("=== Обычный перевод ===");
-        bank.transfer(account1.getId(), account2.getId(), new BigDecimal("100.00"));
+        PostClientHandler postClientHandler = new PostClientHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
-        System.out.println("account1 balance: " + bank.getAccount(account1.getId()).getBalance());
-        System.out.println("account2 balance: " + bank.getAccount(account2.getId()).getBalance());
+        GetAccountHandler getAccountHandler = new GetAccountHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
-        System.out.println();
-        System.out.println("=== Перевод на несуществующий счёт (баг) ===");
+        PostAccountHandler postAccountHandler = new PostAccountHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
-        BigDecimal balanceBefore = bank.getAccount(account1.getId()).getBalance();
+        TransferHandler transferHandler = new TransferHandler(
+                bankService,
+                objectMapper,
+                exceptionMapper
+        );
 
-        try {
-            bank.transfer(account1.getId(), 999L, new BigDecimal("50.00"));
-        } catch (IllegalArgumentException e) {
-            System.out.println("Ошибка (как и ожидалось): " + e.getMessage());
-        }
+        ClientRouter clientRouter = new ClientRouter(
+                getClientHandler,
+                postClientHandler,
+                objectMapper,
+                exceptionMapper
+        );
 
-        BigDecimal balanceAfter = bank.getAccount(account1.getId()).getBalance();
+        AccountRouter accountRouter = new AccountRouter(
+                getAccountHandler,
+                postAccountHandler,
+                objectMapper,
+                exceptionMapper
+        );
 
-        System.out.println("Баланс до попытки перевода: " + balanceBefore);
-        System.out.println("Баланс после попытки перевода: " + balanceAfter);
-        System.out.println("Деньги пропали: " + (balanceAfter.compareTo(balanceBefore) < 0));
+        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+
+        server.createContext("/clients", clientRouter);
+        server.createContext("/accounts", accountRouter);
+        server.createContext("/transfer", transferHandler);
+
+        server.start();
+
+        System.out.println("MiniBank server started on port 8080");
     }
 }
