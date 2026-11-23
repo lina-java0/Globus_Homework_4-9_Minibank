@@ -1,6 +1,6 @@
 package com.minibank.validator.client;
 
-import com.minibank.dto.client.RegisterClientRequest;
+import com.minibank.dto.client.request.RegisterClientRequest;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
 
 public class ClientEmailValidator implements PostClientValidator {

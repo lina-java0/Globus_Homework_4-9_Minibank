@@ -1,7 +1,7 @@
 package com.minibank.httpHandler.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minibank.dto.account.OpenAccountRequest;
+import com.minibank.dto.account.request.OpenAccountRequest;
 import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.httpHandler.utils.HttpUtils;
 import com.minibank.model.Account;

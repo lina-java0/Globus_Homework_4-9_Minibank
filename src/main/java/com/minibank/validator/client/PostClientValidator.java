@@ -1,6 +1,6 @@
 package com.minibank.validator.client;
 
-import com.minibank.dto.client.RegisterClientRequest;
+import com.minibank.dto.client.request.RegisterClientRequest;
 
 public interface PostClientValidator {
 

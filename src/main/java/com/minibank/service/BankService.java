@@ -1,24 +1,32 @@
 package com.minibank.service;
 
+import com.minibank.dto.account.response.AccountResponse;
+import com.minibank.dto.client.response.ClientResponse;
 import com.minibank.exception.custom_exceptions.*;
+import com.minibank.mapper.account.AccountMapper;
+import com.minibank.mapper.client.ClientMapper;
 import com.minibank.model.Account;
 import com.minibank.model.Client;
+import com.minibank.model.Transaction;
+import jakarta.persistence.*;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.time.LocalDateTime;
+
 
 /**
  * MiniBank — "MVP", который наспех собрал предыдущий разработчик:
  * вся логика в одном классе, все данные — в HashMap, персистентности
  * нет вообще (перезапуск процесса — и всё пропало).
- *
+ * <p>
  * ПРОБЛЕМА (найдёшь и исправишь, когда дойдёт очередь — модуль 7.1,
  * когда появится @Transactional): в transfer() проверка существования
  * счёта-получателя происходит ПОСЛЕ списания денег со счёта-
  * отправителя. Если счёт-получатель не существует, деньги уже спишутся
  * с первого счёта и "исчезнут" — их некуда вернуть, потому что метод
  * прерывается исключением до зачисления.
- *
+ * <p>
  * Эта проблема не решается на HashMap "в лоб" без искусственных
  * костылей (можно вручную откатывать баланс в catch, но это не
  * настоящее решение) — она по-настоящему решается только когда
@@ -29,227 +37,229 @@ import java.sql.*;
  */
 public class BankService {
 
-    // Константы подключения
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/minibank";
-    private static final String DB_USERNAME = "minibank_user";
-    private static final String DB_PASSWORD = "postgres";
+    private static final EntityManagerFactory EMF = Persistence.createEntityManagerFactory("minibank");
 
-    // Метод подключения
-    private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-                DB_URL,
-                DB_USERNAME,
-                DB_PASSWORD
-        );
-    }
+    private final ClientMapper clientMapper = new ClientMapper(new AccountMapper());
+    private final AccountMapper accountMapper = new AccountMapper();
 
     // Регистрация клиента
     public Client registerClient(String name, String email) {
-        String sql = """
-                INSERT INTO clients (name, email)
-                VALUES (?, ?)
-                RETURNING id
-                """;
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        EntityManager entityManager = EMF.createEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
 
-            statement.setString(1, name);
-            statement.setString(2, email);
+        try (entityManager) {
+            transaction.begin();
 
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    Long id = resultSet.getLong("id");
-                    return new Client(
-                            id,
-                            name,
-                            email);
-                }
-                throw new SQLException("Failed to retrieve client ID");
+            Client client = new Client(name, email);
+
+            entityManager.persist(client);
+            transaction.commit();
+            return client;
+        } catch (RuntimeException ex) {
+
+            if (transaction.isActive()) {
+                transaction.rollback();
             }
-        } catch (SQLException e) {
+            // Нюанс
+            if (ex instanceof PersistenceException
+                    && ex.getCause() instanceof ConstraintViolationException constraintEx
+                    && "23505".equals(constraintEx.getSQLException().getSQLState())) {
 
-            if ("23505".equals(e.getSQLState())) {
                 throw new EmailAlreadyExistsException("Client with this email already exists: " + email);
             }
-
-            throw new IllegalStateException("Failed to register client", e);
+            throw new IllegalStateException("Failed to register client", ex);
         }
     }
 
+    // Открытие аккаунта (счета)
     public Account openAccount(Long clientId, String accountNumber) {
-        getClient(clientId);
 
-        String sql = """
-            INSERT INTO accounts (client_id, account_number, balance)
-            VALUES (?, ?, ?)
-            RETURNING id
-            """;
+        EntityManager entityManager = EMF.createEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (entityManager) {
+            transaction.begin();
 
-            statement.setLong(1, clientId);
-            statement.setString(2, accountNumber);
-            statement.setBigDecimal(3, BigDecimal.ZERO);
+            Client client = entityManager.find(Client.class, clientId);
 
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    Long id = resultSet.getLong("id");
-
-                    return new Account(
-                            id,
-                            clientId,
-                            accountNumber,
-                            BigDecimal.ZERO
-                    );
-                }
-                throw new SQLException("Failed to retrieve account ID");
-            }
-        } catch (SQLException e) {
-
-            if ("23505".equals(e.getSQLState())) {
-                throw new AccountAlreadyExistsException("Account number already exists: " + accountNumber);
-            }
-
-            throw new IllegalStateException("Failed to open account", e);
-        }
-    }
-
-    public Account getAccount(Long accountId) {
-        String sql = """
-            SELECT id, client_id, account_number, balance
-            FROM accounts
-            WHERE id = ?
-            """;
-
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setLong(1, accountId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return new Account(
-                            resultSet.getLong("id"),
-                            resultSet.getLong("client_id"),
-                            resultSet.getString("account_number"),
-                            resultSet.getBigDecimal("balance")
-                    );
-                }
-                throw new AccountNotFoundException("Account not found: " + accountId);
-            }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to retrieve account", e);
-        }
-    }
-
-    public Client getClient(Long clientId) {
-        String sql = """
-            SELECT id, name, email
-            FROM clients
-            WHERE id = ?
-            """;
-
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setLong(1, clientId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return new Client(
-                            resultSet.getLong("id"),
-                            resultSet.getString("name"),
-                            resultSet.getString("email")
-                    );
-                }
+            if (client == null) {
                 throw new ClientNotFoundException("Client not found: " + clientId);
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to retrieve client", e);
+
+            Account account = new Account(client, accountNumber, BigDecimal.ZERO);
+            client.addAccount(account);
+
+            entityManager.persist(account);
+            transaction.commit();
+            return account;
+        } catch (ClientNotFoundException ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw ex;
+        } catch (RuntimeException ex) {
+
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            // Обрати внимание!!!
+            if (ex instanceof PersistenceException
+                    && ex.getCause() instanceof ConstraintViolationException constraintEx
+                    && "23505".equals(constraintEx.getSQLException().getSQLState())) {
+
+                throw new AccountAlreadyExistsException("Account number already exists: " + accountNumber);
+            }
+            throw new IllegalStateException("Failed to open account", ex);
         }
     }
 
+    // Получение аккаунта по id
+    public AccountResponse getAccount(Long accountId) {
+
+        EntityManager entityManager = EMF.createEntityManager();
+
+        try (entityManager) {
+            Account foundAccount = entityManager.find(Account.class, accountId);
+
+            if (foundAccount == null) {
+                throw new AccountNotFoundException("Account not found: " + accountId);
+            }
+
+            return accountMapper.toResponse(foundAccount);
+        } catch (AccountNotFoundException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException("Failed to retrieve account", ex);
+        }
+    }
+
+    // Получение клиента по id
+    public ClientResponse getClient(Long clientId) {
+
+        EntityManager entityManager = EMF.createEntityManager();
+
+        try (entityManager) {
+            Client foundClient = entityManager.find(Client.class, clientId);
+
+            if (foundClient == null) {
+                throw new ClientNotFoundException("Client not found: " + clientId);
+            }
+
+            return clientMapper.toResponse(foundClient);
+        } catch (ClientNotFoundException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException("Failed to retrieve client", ex);
+        }
+    }
+
+    // Пополнение аккаунта (счета)
     public void deposit(Long accountId, BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Deposit amount must be greater than zero");
         }
 
-        Account account = getAccount(accountId);
-        BigDecimal newBalance = account.getBalance().add(amount);
+        AccountResponse account = getAccount(accountId);
+        BigDecimal newBalance = account.balance().add(amount);
         updateBalance(accountId, newBalance);
         recordTransaction(accountId, amount, "DEPOSIT");
     }
 
+    // Перевод средств
     public void transfer(Long fromAccountId, Long toAccountId, BigDecimal amount) {
-        Account from = getAccount(fromAccountId);
+        AccountResponse from = getAccount(fromAccountId);
 
         // Списываем деньги ДО того, как проверили существование счёта-
         // получателя — если toAccountId не существует, деньги уже
         // списаны и потеряны
-        if (from.getBalance().compareTo(amount) < 0) {
+        if (from.balance().compareTo(amount) < 0) {
             throw new InsufficientFundsException("Insufficient funds on account " + fromAccountId);
         }
 
         // Списываем деньги до проверки существования счёта получателя
         updateBalance(
                 fromAccountId,
-                from.getBalance().subtract(amount)
+                from.balance().subtract(amount)
         );
 
         recordTransaction(fromAccountId, amount.negate(), "TRANSFER_OUT");
 
-        Account to = getAccount(toAccountId); // если бросит исключение — деньги уже пропали
+        AccountResponse to = getAccount(toAccountId); // если бросит исключение — деньги уже пропали
 
         updateBalance(
                 toAccountId,
-                to.getBalance().add(amount)
+                to.balance().add(amount)
         );
 
         recordTransaction(toAccountId, amount, "TRANSFER_IN");
     }
 
+    // Запись транзакции
     private void recordTransaction(Long accountId, BigDecimal amount, String type) {
-        String sql = """
-            INSERT INTO transactions (account_id, amount, type)
-            VALUES (?, ?, ?)
-            """;
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        EntityManager entityManager = EMF.createEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
 
-            statement.setLong(1, accountId);
-            statement.setBigDecimal(2, amount);
-            statement.setString(3, type);
+        try (entityManager) {
+            transaction.begin();
 
-            statement.executeUpdate();
+            Account account = entityManager.find(Account.class, accountId);
 
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to record transaction", e);
+            if (account == null) {
+                throw new AccountNotFoundException("Account not found: " + accountId);
+            }
+
+            Transaction bankTransaction = new Transaction(
+                    account,
+                    amount,
+                    type,
+                    LocalDateTime.now());
+
+            entityManager.persist(bankTransaction);
+            transaction.commit();
+        } catch (AccountNotFoundException ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw ex;
+        } catch (RuntimeException ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new IllegalStateException("Failed to record transaction", ex);
         }
     }
 
+    // Изменить баланс
     private void updateBalance(Long accountId, BigDecimal balance) {
-        String sql = """
-            UPDATE accounts
-            SET balance = ?
-            WHERE id = ?
-            """;
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        EntityManager entityManager = EMF.createEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
 
-            statement.setBigDecimal(1, balance);
-            statement.setLong(2, accountId);
+        try (entityManager) {
+            transaction.begin();
 
-            int updatedRows = statement.executeUpdate();
+            Account account = entityManager.find(Account.class, accountId);
 
-            if (updatedRows == 0) {
+            if (account == null) {
                 throw new AccountNotFoundException("Account not found: " + accountId);
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("Failed to update account balance", e);
+
+            account.setBalance(balance);
+
+            transaction.commit();
+
+        } catch (AccountNotFoundException ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw ex;
+        } catch (RuntimeException ex) {
+            if (transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new IllegalStateException("Failed to update account balance", ex);
         }
     }
 }
