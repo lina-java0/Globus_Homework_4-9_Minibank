@@ -8,11 +8,11 @@ public class RequestBodyNullAccountValidator implements AccountValidator {
     @Override
     public void validateRequest(OpenAccountRequest request) {
         if (request.clientId() == null) {
-            throw new InvalidRequestException("clientId is required");
+            throw new InvalidRequestException("ClientId is required");
         }
 
         if (request.accountNumber() == null) {
-            throw new InvalidRequestException("accountNumber is required");
+            throw new InvalidRequestException("AccountNumber is required");
         }
     }
 }

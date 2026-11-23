@@ -8,11 +8,11 @@ public class PositiveAccountIdTransferValidator implements TransferValidator {
     @Override
     public void validateRequest(TransferRequest request) {
         if (request.fromAccountId() <= 0) {
-            throw new InvalidRequestException("fromAccountId must be positive");
+            throw new InvalidRequestException("FromAccountId must be positive");
         }
 
         if (request.toAccountId() <= 0) {
-            throw new InvalidRequestException("toAccountId must be positive");
+            throw new InvalidRequestException("ToAccountId must be positive");
         }
     }
 }

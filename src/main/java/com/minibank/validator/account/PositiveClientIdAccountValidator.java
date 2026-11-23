@@ -8,7 +8,7 @@ public class PositiveClientIdAccountValidator implements AccountValidator {
     @Override
     public void validateRequest(OpenAccountRequest request) {
         if (request.clientId() <= 0) {
-            throw new InvalidRequestException("clientId must be positive");
+            throw new InvalidRequestException("ClientId must be positive");
         }
     }
 }

@@ -1,10 +1,10 @@
 package com.minibank.httpHandler.transfer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minibank.dto.error.HttpErrorResponse;
 import com.minibank.dto.transfer.TransferRequest;
 import com.minibank.dto.transfer.TransferResponse;
 import com.minibank.exception.HttpExceptionMapper;
+import com.minibank.exception.custom_exceptions.MethodNotAllowedException;
 import com.minibank.httpHandler.utils.HttpUtils;
 import com.minibank.service.BankService;
 import com.minibank.validator.transfer.*;
@@ -41,7 +41,8 @@ public class TransferHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            HttpUtils.validateHttpMethod(exchange);
+            validateHttpMethod(exchange);
+
             // Формирование запроса
             TransferRequest request = HttpUtils.readRequest(
                     exchange,
@@ -66,13 +67,19 @@ public class TransferHandler implements HttpHandler {
             );
 
         } catch (RuntimeException ex) {
-            HttpErrorResponse error = exceptionMapper.map(ex);
-
-            HttpUtils.sendResponse(
+            HttpUtils.sendError(
                     exchange,
-                    error.statusCode(),
-                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(error)
+                    ex,
+                    exceptionMapper,
+                    objectMapper
             );
+        }
+    }
+
+    private void validateHttpMethod(HttpExchange exchange) {
+        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+            exchange.getResponseHeaders().set("Allow", "POST");
+            throw new MethodNotAllowedException("Method not allowed");
         }
     }
 }

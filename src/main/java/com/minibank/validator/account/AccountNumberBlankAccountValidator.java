@@ -8,7 +8,7 @@ public class AccountNumberBlankAccountValidator implements AccountValidator {
     @Override
     public void validateRequest(OpenAccountRequest request) {
         if (request.accountNumber().isBlank()) {
-            throw new InvalidRequestException("accountNumber must not be blank");
+            throw new InvalidRequestException("AccountNumber must not be blank");
         }
     }
 }
