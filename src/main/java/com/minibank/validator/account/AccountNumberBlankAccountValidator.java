@@ -1,6 +1,6 @@
 package com.minibank.validator.account;
 
-import com.minibank.dto.account.OpenAccountRequest;
+import com.minibank.dto.account.request.OpenAccountRequest;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
 
 public class AccountNumberBlankAccountValidator implements AccountValidator {

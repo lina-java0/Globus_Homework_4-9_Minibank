@@ -1,6 +1,6 @@
 package com.minibank.validator.account;
 
-import com.minibank.dto.account.OpenAccountRequest;
+import com.minibank.dto.account.request.OpenAccountRequest;
 
 public interface AccountValidator {
 

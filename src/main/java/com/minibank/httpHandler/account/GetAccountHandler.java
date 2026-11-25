@@ -1,9 +1,9 @@
 package com.minibank.httpHandler.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minibank.dto.account.response.AccountResponse;
 import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.httpHandler.utils.HttpUtils;
-import com.minibank.model.Account;
 import com.minibank.service.BankService;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -33,7 +33,7 @@ public class GetAccountHandler implements HttpHandler {
             long accountId = HttpUtils.extractId(exchange, "accounts");
 
             // Вызов сервиса
-            Account account = bankService.getAccount(accountId);
+            AccountResponse account = bankService.getAccount(accountId);
 
             HttpUtils.sendResponse(
                     exchange,
