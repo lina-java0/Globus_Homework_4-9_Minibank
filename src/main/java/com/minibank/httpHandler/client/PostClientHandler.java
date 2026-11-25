@@ -2,6 +2,7 @@ package com.minibank.httpHandler.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minibank.dto.client.request.RegisterClientRequest;
+import com.minibank.dto.client.response.ClientResponse;
 import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.httpHandler.utils.HttpUtils;
 import com.minibank.model.Client;
@@ -56,10 +57,16 @@ public class PostClientHandler implements HttpHandler {
                     request.name(),
                     request.email()
             );
+            ClientResponse response = new ClientResponse(
+                    client.getId(),
+                    client.getName(),
+                    client.getEmail(),
+                    List.of()
+            );
             HttpUtils.sendResponse(
                     exchange,
                     201,
-                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(client));
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response));
 
         } catch (RuntimeException ex) {
             HttpUtils.sendError(

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "accounts")
@@ -14,7 +15,7 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
@@ -26,7 +27,7 @@ public class Account {
 
     @OneToMany(
             mappedBy = "account",
-            fetch = FetchType.EAGER,
+            fetch = FetchType.LAZY,
             cascade = CascadeType.ALL
     )
     private List<Transaction> transactions = new ArrayList<>();
@@ -57,12 +58,17 @@ public class Account {
     public Client getClient() { return client; }
     public String getAccountNumber() { return accountNumber; }
     public BigDecimal getBalance() { return balance; }
-    public List<Transaction> getTransactions() {
-        return transactions;
+    public List<Transaction> getTransactions() { return transactions; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Account account)) return false;
+        return Objects.equals(accountNumber, account.accountNumber);
     }
 
-    // Временная совместимость с кодом, который использовал clientId
-    public Long getClientId() {
-        return client.getId();
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(accountNumber);
     }
 }

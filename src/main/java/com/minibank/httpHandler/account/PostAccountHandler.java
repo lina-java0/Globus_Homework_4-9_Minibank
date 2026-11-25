@@ -2,6 +2,7 @@ package com.minibank.httpHandler.account;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minibank.dto.account.request.OpenAccountRequest;
+import com.minibank.dto.account.response.AccountResponse;
 import com.minibank.exception.HttpExceptionMapper;
 import com.minibank.httpHandler.utils.HttpUtils;
 import com.minibank.model.Account;
@@ -55,10 +56,16 @@ public class PostAccountHandler implements HttpHandler {
                     request.clientId(),
                     request.accountNumber()
             );
+            AccountResponse response = new AccountResponse(
+                    account.getId(),
+                    account.getAccountNumber(),
+                    account.getBalance()
+            );
+
             HttpUtils.sendResponse(
                     exchange,
                     201,
-                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(account)
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response)
             );
 
         } catch (RuntimeException ex) {

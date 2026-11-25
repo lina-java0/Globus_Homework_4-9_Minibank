@@ -4,9 +4,16 @@ import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "clients")
+@NamedEntityGraph(
+        name = "Client.withAccounts",
+        attributeNodes = {
+                @NamedAttributeNode("accounts")
+        }
+)
 public class Client {
 
     @Id
@@ -21,8 +28,9 @@ public class Client {
 
     @OneToMany(
             mappedBy = "client",
-            fetch = FetchType.EAGER,
-            cascade = CascadeType.ALL
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
     )
     private List<Account> accounts = new ArrayList<>();
 
@@ -43,4 +51,16 @@ public class Client {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public List<Account> getAccounts() { return accounts; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Client client)) return false;
+        return Objects.equals(email, client.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(email);
+    }
 }

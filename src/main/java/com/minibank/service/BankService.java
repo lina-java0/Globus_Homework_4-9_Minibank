@@ -13,6 +13,7 @@ import org.hibernate.exception.ConstraintViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 
 /**
@@ -140,11 +141,13 @@ public class BankService {
         EntityManager entityManager = EMF.createEntityManager();
 
         try (entityManager) {
-            Client foundClient = entityManager.find(Client.class, clientId);
+            EntityGraph<?> graph = entityManager.createEntityGraph("Client.withAccounts");
 
-            if (foundClient == null) {
-                throw new ClientNotFoundException("Client not found: " + clientId);
-            }
+            Client foundClient = entityManager.find(
+                    Client.class,
+                    clientId,
+                    Map.of("jakarta.persistence.fetchgraph", graph)
+            );
 
             return clientMapper.toResponse(foundClient);
         } catch (ClientNotFoundException ex) {
@@ -154,17 +157,17 @@ public class BankService {
         }
     }
 
-    // Пополнение аккаунта (счета)
-    public void deposit(Long accountId, BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Deposit amount must be greater than zero");
-        }
-
-        AccountResponse account = getAccount(accountId);
-        BigDecimal newBalance = account.balance().add(amount);
-        updateBalance(accountId, newBalance);
-        recordTransaction(accountId, amount, "DEPOSIT");
-    }
+//    // Пополнение аккаунта (счета) - сделано для 1 версии приложения
+//    public void deposit(Long accountId, BigDecimal amount) {
+//        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Deposit amount must be greater than zero");
+//        }
+//
+//        AccountResponse account = getAccount(accountId);
+//        BigDecimal newBalance = account.balance().add(amount);
+//        updateBalance(accountId, newBalance);
+//        recordTransaction(accountId, amount, "DEPOSIT");
+//    }
 
     // Перевод средств
     public void transfer(Long fromAccountId, Long toAccountId, BigDecimal amount) {
@@ -215,6 +218,7 @@ public class BankService {
                     amount,
                     type,
                     LocalDateTime.now());
+            account.addTransaction(bankTransaction);
 
             entityManager.persist(bankTransaction);
             transaction.commit();

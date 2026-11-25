@@ -13,7 +13,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
@@ -45,9 +45,4 @@ public class Transaction {
     public BigDecimal getAmount() { return amount; }
     public String getType() { return type; }
     public LocalDateTime getTimestamp() { return timestamp; }
-
-    // Временная совместимость с кодом, который использовал accountId
-    public Long getAccountId() {
-        return account.getId();
-    }
 }
