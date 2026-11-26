@@ -2,7 +2,9 @@ package com.minibank.validator.client;
 
 import com.minibank.dto.client.request.RegisterClientRequest;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
+import org.springframework.stereotype.Component;
 
+@Component
 public class RequestNullClientValidator implements PostClientValidator {
 
     @Override

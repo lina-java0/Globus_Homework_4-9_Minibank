@@ -1,8 +1,10 @@
 package com.minibank.exception.strategies;
 
-import com.minibank.dto.error.HttpErrorResponse;
+import com.minibank.dto.error.ErrorResponse;
 import com.minibank.exception.custom_exceptions.EmailAlreadyExistsException;
+import org.springframework.stereotype.Component;
 
+@Component
 public class EmailAlreadyExistsStrategy implements ExceptionHandlerStrategy {
 
     @Override
@@ -11,8 +13,8 @@ public class EmailAlreadyExistsStrategy implements ExceptionHandlerStrategy {
     }
 
     @Override
-    public HttpErrorResponse handle(Exception ex) {
-        return new HttpErrorResponse(
+    public ErrorResponse handle(Exception ex) {
+        return new ErrorResponse(
                 409,
                 ex.getMessage());
     }
