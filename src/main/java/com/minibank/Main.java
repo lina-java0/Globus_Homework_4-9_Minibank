@@ -1,15 +1,29 @@
 package com.minibank;
 
+import com.minibank.model.Account;
+import com.minibank.model.Client;
+import com.minibank.repository.*;
+import com.minibank.service.BankService;
+
 import java.math.BigDecimal;
 
 public class Main {
 
     public static void main(String[] args) {
-        BankService bank = new BankService();
+        ConnectionFactory connectionFactory = new ConnectionFactory();
+        ClientRepository clientRepository = new ClientRepository(connectionFactory);
+        AccountRepository accountRepository = new AccountRepository(connectionFactory);
+        TransferRepository transactionRepository = new TransferRepository(connectionFactory);
 
-        Client client = bank.registerClient("Ivan Petrov", "ivan@example.com");
-        Account account1 = bank.openAccount(client.getId(), "ACC-101");
-        Account account2 = bank.openAccount(client.getId(), "ACC-102");
+        BankService bank = new BankService(
+                clientRepository,
+                accountRepository,
+                transactionRepository
+        );
+
+        Client client = bank.registerClient("Polina Petrova", "polina_lina@example.com");
+        Account account1 = bank.openAccount(client.getId(), "ACC-110001");
+        Account account2 = bank.openAccount(client.getId(), "ACC-110002");
 
         // Пополняем первый счёт перед демонстрацией переводов
         bank.deposit(account1.getId(), new BigDecimal("1000.00"));
