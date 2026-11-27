@@ -1,10 +1,12 @@
-package com.minibank.validator.transaction;
+package com.minibank.validator.transfer;
 
-import com.minibank.dto.transaction.TransferRequest;
+import com.minibank.dto.transfer.TransferRequest;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(2)
 public class RequestBodyNullTransferValidator implements TransferValidator {
 
     @Override

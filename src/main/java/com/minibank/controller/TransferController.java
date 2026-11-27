@@ -1,9 +1,9 @@
 package com.minibank.controller;
 
-import com.minibank.dto.transaction.TransferRequest;
-import com.minibank.dto.transaction.TransferResponse;
-import com.minibank.service.TransactionService;
-import com.minibank.validator.transaction.TransferValidator;
+import com.minibank.dto.transfer.TransferRequest;
+import com.minibank.dto.transfer.TransferResponse;
+import com.minibank.service.TransferService;
+import com.minibank.validator.transfer.TransferValidator;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,16 +14,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/transfer")
-public class TransactionController {
+public class TransferController {
 
-    private final TransactionService transactionService;
+    private final TransferService transferService;
     private final List<TransferValidator> transferValidatorList;
 
-    public TransactionController(
-            TransactionService transactionService,
+    public TransferController(
+            TransferService transferService,
             List<TransferValidator> transferValidatorList
     ) {
-        this.transactionService = transactionService;
+        this.transferService = transferService;
         this.transferValidatorList = transferValidatorList;
     }
 
@@ -31,7 +31,7 @@ public class TransactionController {
     // Перевод средств между аккаунтами
     @PostMapping
     public ResponseEntity<TransferResponse> transfer(
-            @RequestBody TransferRequest request
+            @RequestBody(required = false) TransferRequest request
     ) {
         // Валидация запроса
         for (TransferValidator validator : transferValidatorList) {
@@ -39,7 +39,7 @@ public class TransactionController {
         }
 
         // Вызов сервиса
-        transactionService.transfer(
+        transferService.transfer(
                 request.fromAccountId(),
                 request.toAccountId(),
                 request.amount()

@@ -2,9 +2,11 @@ package com.minibank.exception.strategies;
 
 import com.minibank.dto.error.ErrorResponse;
 import com.minibank.exception.custom_exceptions.AccountAlreadyExistsException;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(5)
 public class AccountAlreadyExistsStrategy implements ExceptionHandlerStrategy {
 
     @Override

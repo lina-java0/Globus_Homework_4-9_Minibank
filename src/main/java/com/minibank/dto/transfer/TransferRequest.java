@@ -1,4 +1,4 @@
-package com.minibank.dto.transaction;
+package com.minibank.dto.transfer;
 
 import java.math.BigDecimal;
 

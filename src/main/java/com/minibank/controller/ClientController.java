@@ -41,7 +41,7 @@ public class ClientController {
     // Регистрация клиента
     @PostMapping
     public ResponseEntity<ClientResponse> registerClient(
-            @RequestBody RegisterClientRequest request
+            @RequestBody(required = false) RegisterClientRequest request
     ) {
         // Валидация запроса
         for (PostClientValidator validator : clientValidatorList) {

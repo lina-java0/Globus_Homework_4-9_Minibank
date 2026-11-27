@@ -42,7 +42,7 @@ AccountController {
     // Открытие аккаунта (счета)
     @PostMapping
     public ResponseEntity<AccountResponse> openAccount(
-            @RequestBody OpenAccountRequest request
+            @RequestBody(required = false) OpenAccountRequest request
     ) {
         // Валидация запроса
         for (AccountValidator validator : accountValidatorList) {

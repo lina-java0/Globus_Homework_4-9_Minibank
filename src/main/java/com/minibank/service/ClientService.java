@@ -7,23 +7,22 @@ import com.minibank.mapper.AccountMapper;
 import com.minibank.mapper.ClientMapper;
 import com.minibank.model.Client;
 import com.minibank.repository.ClientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ClientService {
 
-    @Autowired
-    private ClientRepository clientRepository;
+    private final ClientRepository clientRepository;
 
-    private final AccountService accountService;
+    private final AccountMapper accountMapper = new AccountMapper();
+    private final ClientMapper clientMapper = new ClientMapper(accountMapper);
 
-    public ClientService(AccountService accountService) {
-        this.accountService = accountService;
+    public ClientService(
+            ClientRepository clientRepository
+    ) {
+        this.clientRepository = clientRepository;
     }
-
-    private final ClientMapper clientMapper = new ClientMapper(new AccountMapper());
 
     // Регистрация клиента
     public Client registerClient(String name, String email) {
@@ -41,12 +40,11 @@ public class ClientService {
         Client client = clientRepository.findWithAccountsById(clientId)
                 .orElseThrow(() -> new ClientNotFoundException("Client not found: " + clientId));
 
-        return clientMapper.toResponse(client, accountService.getAccountsByClientId(clientId));
-    }
-
-    // Получение сущности клиента для внутренних операций
-    public Client getClientEntity(Long clientId) {
-        return clientRepository.findById(clientId)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found: " + clientId));
+        return clientMapper.toResponse(
+                client,
+                client.getAccounts().stream()
+                        .map(accountMapper::toResponse)
+                        .toList()
+        );
     }
 }
