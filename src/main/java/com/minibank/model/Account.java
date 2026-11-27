@@ -1,4 +1,4 @@
-package com.minibank;
+package com.minibank.model;
 
 import java.math.BigDecimal;
 
