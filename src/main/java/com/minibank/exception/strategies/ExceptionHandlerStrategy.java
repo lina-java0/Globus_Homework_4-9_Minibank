@@ -1,6 +1,6 @@
 package com.minibank.exception.strategies;
 
-import com.minibank.dto.error.HttpErrorResponse;
+import com.minibank.dto.error.ErrorResponse;
 
 public interface ExceptionHandlerStrategy {
 
@@ -8,5 +8,5 @@ public interface ExceptionHandlerStrategy {
     boolean supports(Exception ex);
 
     // Формирует HTTP-ответ
-    HttpErrorResponse handle(Exception ex);
+    ErrorResponse handle(Exception ex);
 }

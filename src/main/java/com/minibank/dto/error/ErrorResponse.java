@@ -1,6 +1,6 @@
 package com.minibank.dto.error;
 
-public record HttpErrorResponse(
+public record ErrorResponse(
         int statusCode,
         String message
 ) {

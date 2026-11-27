@@ -1,7 +1,11 @@
 package com.minibank.exception.strategies;
 
-import com.minibank.dto.error.HttpErrorResponse;
+import com.minibank.dto.error.ErrorResponse;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
+@Component
+@Order(8)
 public class DefaultExceptionStrategy implements ExceptionHandlerStrategy {
 
     @Override
@@ -10,8 +14,8 @@ public class DefaultExceptionStrategy implements ExceptionHandlerStrategy {
     }
 
     @Override
-    public HttpErrorResponse handle(Exception ex) {
-        return new HttpErrorResponse(
+    public ErrorResponse handle(Exception ex) {
+        return new ErrorResponse(
                 500,
                 "Internal server error"
         );

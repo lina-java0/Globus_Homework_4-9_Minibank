@@ -1,4 +1,4 @@
-package com.minibank.mapper.account;
+package com.minibank.mapper;
 
 import com.minibank.dto.account.response.AccountResponse;
 import com.minibank.model.Account;

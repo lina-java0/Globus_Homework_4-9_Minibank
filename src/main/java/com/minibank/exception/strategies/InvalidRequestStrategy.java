@@ -1,8 +1,12 @@
 package com.minibank.exception.strategies;
 
-import com.minibank.dto.error.HttpErrorResponse;
+import com.minibank.dto.error.ErrorResponse;
 import com.minibank.exception.custom_exceptions.InvalidRequestException;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
+@Component
+@Order(3)
 public class InvalidRequestStrategy implements ExceptionHandlerStrategy {
 
     @Override
@@ -11,8 +15,8 @@ public class InvalidRequestStrategy implements ExceptionHandlerStrategy {
     }
 
     @Override
-    public HttpErrorResponse handle(Exception ex) {
-        return new HttpErrorResponse(
+    public ErrorResponse handle(Exception ex) {
+        return new ErrorResponse(
                 400,
                 ex.getMessage()
         );
